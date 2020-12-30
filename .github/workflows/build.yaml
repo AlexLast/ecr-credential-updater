@@ -17,8 +17,8 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-west-2
     - name: Login to ECR
-      uses: aws-actions/amazon-ecr-login@v1
-      id: login-ecr
+      run: |
+        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
     - name: Build & push to ECR
       env:
         ECR_REGISTRY: public.ecr.aws/alexlast
@@ -27,7 +27,9 @@ jobs:
       run: |
         STRIPPED_TAG=$(echo $IMAGE_TAG | sed 's|refs/tags/||')
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$STRIPPED_TAG -f Dockerfile .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$STRIPPED_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$STRIPPED_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
     - name: Logout of ECR
       if: always()
       run: docker logout ${{ steps.login-ecr.outputs.registry }}
